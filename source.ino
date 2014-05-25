@@ -35,6 +35,11 @@
 #define LCD_D6 3
 #define LCD_D7 2
 
+#ifdef DEBUG
+#define DEBUG_SEND( msg ) Serial.println( msg );
+#else 
+#define DEBUG_SEND( msg )
+#endif
 
 // Component Objects
 LiquidCrystal lcd( LCD_RS, LCD_ENABLE, LCD_D4, LCD_D5, LCD_D6, LCD_D7 );
@@ -61,9 +66,9 @@ void setup()
   pinMode(LED_RED,OUTPUT);
   pinMode(LED_GRE,OUTPUT);
 
-  // BEGIN DEBUG:
+  #ifdef DEBUG
   Serial.begin(9600);
-  // EOF DEBUG.
+  #endif
 }
 
 //
@@ -87,29 +92,21 @@ void loop()
   // If temperature is too high
   if(temp>T)
   {
-  	// Green LED (9) ON (For when temperature is *too high*? GREEN?)
-    digitalWrite(LED_GRE,HIGH);
-    // Buzzer (10) on LOW
-    digitalWrite(FMQ,LOW);
+    digitalWrite(LED_GRE,HIGH); 	// Green LED (9) ON (For when temperature is *too high*? GREEN?)
+    digitalWrite(FMQ,LOW);    		// Buzzer (10) on LOW
   }else{
-  	// Green LED OFF
-    digitalWrite(LED_GRE,LOW);
-    // Buzzer on HIGH
+    digitalWrite(LED_GRE,LOW);   	// Green LED OFF
     digitalWrite(FMQ,HIGH);
   } 
 
   // If humidity is too high
   if(humi>H)
   {
-  	// Red LED ON (7)
-    digitalWrite(LED_RED,HIGH);
-    // Buzzer on LOW (13)
-    digitalWrite(fmq,LOW);
+    digitalWrite(LED_RED,HIGH);  	// Red LED ON (7)
+    digitalWrite(fmq,LOW);  	    // Buzzer on LOW (13)
   }else{
-  	// Red LED OFF (7)
-    digitalWrite(LED_RED,LOW);
-    // Buzzer on HIGH (13)
-    digitalWrite(fmq,HIGH);
+    digitalWrite(LED_RED,LOW);  	// Red LED OFF (7)
+    digitalWrite(fmq,HIGH); 	   // Buzzer on HIGH (13)
   }
 
   // Get Smoke status... Then do nothing with the value apart 
@@ -118,8 +115,8 @@ void loop()
   val=analogRead(0);
 
   // BEGIN DEBUG:
-  Serial.print("smo:");
-  Serial.println(val,DEC);
+  DEBUG_SEND("smo:");
+  DEBUG_SEND(val);
   // EOF DEBUG.
 
   delay(100);
@@ -252,9 +249,7 @@ bool getDHTValues( pin )
 
   if( bits[0] + bits[2] != tol )
   {
-		// BEGIN DEBUG:
-	    Serial.println("DHT11 REPORTS INVALID VALUES.");	// Provide visual feedback?
-	    // EOF DEBUG.
+	    DEBUG_SEND("DHT11 REPORTS INVALID VALUES.");	// Provide visual feedback?
 	    return false;
   }
 
@@ -270,10 +265,8 @@ inline bool checkForDHTAcknowledgement( int pin, uint8_t level )
   {
   	if( loopCnt-- == 0 )
   	{
-	  // BEGIN DEBUG:
-      Serial.println("DHT11 TIMED OUT.");	// Provide visual feedback?
+      DEBUG_SEND("DHT11 TIMED OUT.");	// Provide visual feedback?
       return false;
-      // EOF DEBUG.
   	}
   }
 }
