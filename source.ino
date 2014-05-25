@@ -4,10 +4,10 @@
 **   http://www.icstation.com/product_info.php?products_id=3665#.U4IX4h89jC0
 **
 ** Original Source code available from:
-**  http://www.icstation.com/newsletter/eMarketing/alarm%20system%20code.txt
+**  http://www.icstation.com/newslecheckTemper/eMarketing/alarm%20system%20code.txt
 */
 
-#include<LiquidCrystal.h>
+#include <LiquidCrystal.h>
 
 LiquidCrystal lcd(12,11,5,4,3,2);
 int temp;
@@ -45,9 +45,9 @@ void setup()
 //
 void loop()
 {
-  HH();					// Check for Humidity Interaction
-  TT();					// Check for Temperature Interaction
-  keyScan();			// CHeck for Reset Interaction
+  keyHumidityAdjust();		// Check for Humidity Interaction
+  keyTempAdjust();			// Check for Temperature Interaction
+  keyResetScan();			// CHeck for Reset Interaction
 
 
   bgn:								// BEGIN LABEL.
@@ -204,60 +204,56 @@ void loop()
   }
 }
 
-// TODO: FIX CODE DUPLICATION IN BELOW FUNCTIONS.
 
-// Detect button presses on Pin A3, and - I think - reset the alarm?
+// Detect BUTTON presses on Pin A3, and - I think - reset the alarm?
 //  Doesn't actually make a great deal of sense to be honest, alarm
 //  will automatically go off again unless the environmental factor
 //  is rectified, and then the alarm will stop automatically anyway.
 void keyScan()
 {
-  if(analogRead(BUTTON)>600)
-   {
-     delay(20);
-     if(analogRead(BUTTON)>600)
-     {
-       flag++;
-       if(flag>=3)
-         flag=0;
-       while(analogRead(BUTTON)>600);
-     }
-   }
+	if( buttonCheck( BUTTON ) )
+	{
+		flag++;
+		if( flag > 2 ) flag = 0;
+	}
 }
 
-// Detect button presses on Pin A1, and increase humidity threshold.
+// Detect BUTTON presses on Pin A1, and increase humidity threshold.
 //  Should humidity be set above 61, revert back to 20.
 //  Some form of UI feedback (LCD and DEBUG?) would be nice.
-void HH()
+void keyHumidityAdjust()
 {
-  if(analogRead(B)>600)
-   {
-     delay(20);
-     if(analogRead(B)>600)
-     {
-       H++;
-       if(H>=61)
-         H=40;
-       while(analogRead(B)>600);
-     }
-   }
+	if( buttonCheck( B ) )
+	{
+		H++;
+		if( H > 60 ) H = 40;
+	}
 }
 
-// Detect button presses on Pin A2, and increase temperature 
+// Detect BUTTON presses on Pin A2, and increase temperature 
 //  threshold. Should temperature be set above 31, revert back 
 //  to 20.
 //  Some form of UI feedback (LCD and DEBUG?) would be nice.
-void TT()
+void keyTempAdjust()
 {
-  if(analogRead(BU)>600)
-   {
-     delay(20);
-     if(analogRead(BU)>600)
-     {
-       T++;
-       if(T>=31)
-         T=20;
-       while(analogRead(BU)>600);
-     }
-   }
+	if( buttonCheck( BU ) )
+	{
+		T++;
+		if( T > 30 ) T = 20;
+	}
+}
+
+// Check for a button press on a given PIN.
+bool buttonCheck( int pin )
+{
+	if( analogRead(pin) > 600 )
+	{
+		delay(20);
+		if( analogRead(pin) > 600 )
+		{
+			while( analogRead(pin) > 600 ); // Blocks execution until button is released.
+			return true;
+		}
+	}
+	return false;
 }
