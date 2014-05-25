@@ -36,31 +36,44 @@ void setup()
   pinMode(FMQ,OUTPUT);
   pinMode(LED,OUTPUT);
   pinMode(led,OUTPUT);
+
+  // BEGIN DEBUG:
   Serial.begin(9600);
+  // EOF DEBUG.
 }
 
 //
 void loop()
 {
-  HH();
-  TT();
-  keyScan();
-  bgn:
-  delay(200);
-  pinMode(pin,OUTPUT);
-  digitalWrite(pin,LOW);
-  delay(20);
-  digitalWrite(pin,HIGH);
-  delayMicroseconds(40);
-  digitalWrite(pin,LOW);
-  pinMode(pin,INPUT);
+  HH();					// Check for Humidity Interaction
+  TT();					// Check for Temperature Interaction
+  keyScan();			// CHeck for Reset Interaction
+
+
+  bgn:								// BEGIN LABEL.
+
+  /*
+  ** BEGIN HUMIDITY AND TEMPERATURE SENSING (DHT11 - PIN 8)
+  */
+
+  // EXTRACT BELOW LOGIC TO SOMEWHERE MORE SANE.
+  delay(200);						// Delay
+  pinMode(pin,OUTPUT);				// Set DHT11 Signal (8) to output
+  digitalWrite(pin,LOW);			// Write low.
+  delay(20);						// Wait 20ms
+  digitalWrite(pin,HIGH);			// Write High
+  delayMicroseconds(40);			// delay 40ms
+  digitalWrite(pin,LOW);			// Write LOw
+  pinMode(pin,INPUT);				// Set to input
   loopCnt=10000;
   
   while(digitalRead(pin) != HIGH)
   {
     if(loopCnt-- == 0)
     {
+	  // BEGIN DEBUG:
       Serial.println("HIGH");
+      // EOF DEBUG.
       goto bgn;
     }
   }
@@ -70,7 +83,9 @@ void loop()
   {
     if(loopCnt-- == 0)
     {
+	  // BEGIN DEBUG:
       Serial.println("LOW");
+      // EOF DEBUG.
       goto bgn;
     }
   }
@@ -90,43 +105,67 @@ void loop()
       chr[i]=0;
     }
   }
-   
+  
+
+  // TODO: WEIRD BINARY CONVERSION.
   humi=chr[0]*128+chr[1]*64+chr[2]*32+chr[3]*16+chr[4]*8+chr[5]*4+chr[6]*2+chr[7];
   temp=chr[16]*128+chr[17]*64+chr[18]*32+chr[19]*16+chr[20]*8+chr[21]*4+chr[22]*2+chr[23];
   tol=chr[32]*128+chr[33]*64+chr[34]*32+chr[35]*16+chr[36]*8+chr[37]*4+chr[38]*2+chr[39];
 
+  /*
+  ** EOF DHT11 SENSING
+  */
+
+  // BEGIN DEBUG:
   Serial.print("temp:");
   Serial.println(temp);
   Serial.print("humi:");
   Serial.println(humi);
   Serial.print("tol:");
   Serial.println(tol);
+  // EOF DEBUG.
 
+  // If temperature is too high
   if(temp>T)
   {
+  	// Green LED (9) ON (For when temperature is *too high*? GREEN?)
     digitalWrite(LED,HIGH);
+    // Buzzer (10) on LOW
     digitalWrite(FMQ,LOW);
   }else{
+  	// Green LED OFF
     digitalWrite(LED,LOW);
+    // Buzzer on HIGH
     digitalWrite(FMQ,HIGH);
   } 
 
+  // If humidity is too high
   if(humi>H)
   {
+  	// Red LED ON (7)
     digitalWrite(led,HIGH);
+    // Buzzer on LOW (13)
     digitalWrite(fmq,LOW);
   }else{
+  	// Red LED OFF (7)
     digitalWrite(led,LOW);
+    // Buzzer on HIGH (13)
     digitalWrite(fmq,HIGH);
   }
 
+  // Get Smoke status... Then do nothing with the value apart 
+  //  from output to LCD?!
   int val;
   val=analogRead(0);
+
+  // BEGIN DEBUG:
   Serial.print("smo:");
   Serial.println(val,DEC);
-  
+  // EOF DEBUG.
+
   delay(100);
 
+  // If All is OK; Draw variables on LCD.
   if(flag==0)
   {
     lcd.begin(16,2);
@@ -146,6 +185,7 @@ void loop()
     lcd.print(val,DEC);
   }
 
+  // If temperature is too high, draw alert on LCD.
   if(flag==1)
   {  
     lcd.begin(16,2);
@@ -154,7 +194,7 @@ void loop()
     lcd.print(T);
   }
 
-
+  // If humidity is too high, draw alert on LCD.
   if(flag==2)
   {
     lcd.begin(16,2);
@@ -164,8 +204,12 @@ void loop()
   }
 }
 
-//
-//
+// TODO: FIX CODE DUPLICATION IN BELOW FUNCTIONS.
+
+// Detect button presses on Pin A3, and - I think - reset the alarm?
+//  Doesn't actually make a great deal of sense to be honest, alarm
+//  will automatically go off again unless the environmental factor
+//  is rectified, and then the alarm will stop automatically anyway.
 void keyScan()
 {
   if(analogRead(BUTTON)>600)
@@ -181,8 +225,9 @@ void keyScan()
    }
 }
 
-//
-//
+// Detect button presses on Pin A1, and increase humidity threshold.
+//  Should humidity be set above 61, revert back to 20.
+//  Some form of UI feedback (LCD and DEBUG?) would be nice.
 void HH()
 {
   if(analogRead(B)>600)
@@ -198,8 +243,10 @@ void HH()
    }
 }
 
-//
-//
+// Detect button presses on Pin A2, and increase temperature 
+//  threshold. Should temperature be set above 31, revert back 
+//  to 20.
+//  Some form of UI feedback (LCD and DEBUG?) would be nice.
 void TT()
 {
   if(analogRead(BU)>600)
