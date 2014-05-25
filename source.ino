@@ -8,6 +8,7 @@
 */
 
 #include<LiquidCrystal.h>
+
 LiquidCrystal lcd(12,11,5,4,3,2);
 int temp;
 int humi;
@@ -27,6 +28,8 @@ unsigned int loopCnt;
 int chr[40] = {0};
 unsigned long time;
 #define pin 8
+
+//
 void setup()
 { 
   pinMode(fmq,OUTPUT);
@@ -35,8 +38,11 @@ void setup()
   pinMode(led,OUTPUT);
   Serial.begin(9600);
 }
+
+//
 void loop()
-{ HH();
+{
+  HH();
   TT();
   keyScan();
   bgn:
@@ -49,6 +55,7 @@ void loop()
   digitalWrite(pin,LOW);
   pinMode(pin,INPUT);
   loopCnt=10000;
+  
   while(digitalRead(pin) != HIGH)
   {
     if(loopCnt-- == 0)
@@ -68,7 +75,7 @@ void loop()
     }
   }
  
-    for(int i=0;i<40;i++)
+  for(int i=0;i<40;i++)
   {
     while(digitalRead(pin) == LOW)
     {}
@@ -84,10 +91,10 @@ void loop()
     }
   }
    
-humi=chr[0]*128+chr[1]*64+chr[2]*32+chr[3]*16+chr[4]*8+chr[5]*4+chr[6]*2+chr[7];
-   
-temp=chr[16]*128+chr[17]*64+chr[18]*32+chr[19]*16+chr[20]*8+chr[21]*4+chr[22]*2+chr[23];
-tol=chr[32]*128+chr[33]*64+chr[34]*32+chr[35]*16+chr[36]*8+chr[37]*4+chr[38]*2+chr[39];
+  humi=chr[0]*128+chr[1]*64+chr[2]*32+chr[3]*16+chr[4]*8+chr[5]*4+chr[6]*2+chr[7];
+  temp=chr[16]*128+chr[17]*64+chr[18]*32+chr[19]*16+chr[20]*8+chr[21]*4+chr[22]*2+chr[23];
+  tol=chr[32]*128+chr[33]*64+chr[34]*32+chr[35]*16+chr[36]*8+chr[37]*4+chr[38]*2+chr[39];
+
   Serial.print("temp:");
   Serial.println(temp);
   Serial.print("humi:");
@@ -95,63 +102,70 @@ tol=chr[32]*128+chr[33]*64+chr[34]*32+chr[35]*16+chr[36]*8+chr[37]*4+chr[38]*2+c
   Serial.print("tol:");
   Serial.println(tol);
 
- if(temp>T)
- {
-   digitalWrite(LED,HIGH);
-   digitalWrite(FMQ,LOW);
+  if(temp>T)
+  {
+    digitalWrite(LED,HIGH);
+    digitalWrite(FMQ,LOW);
   }else{
- digitalWrite(LED,LOW);
- digitalWrite(FMQ,HIGH);
- } 
- if(humi>H)
- {
-   digitalWrite(led,HIGH);
-   digitalWrite(fmq,LOW);
+    digitalWrite(LED,LOW);
+    digitalWrite(FMQ,HIGH);
+  } 
+
+  if(humi>H)
+  {
+    digitalWrite(led,HIGH);
+    digitalWrite(fmq,LOW);
   }else{
- digitalWrite(led,LOW);
- digitalWrite(fmq,HIGH);
- }
- 
- int val;
-    val=analogRead(0);
-    Serial.print("smo:");
-    Serial.println(val,DEC);
-    delay(100);
-if(flag==0)
-{
-  lcd.begin(16,2);
-  lcd.setCursor(0,0);
-  lcd.print("TEMP:  C");
-  lcd.setCursor(9,0);
-  lcd.print("SMO:");
-  lcd.setCursor(0,1);
-  lcd.print("HUMI:  %");
-  lcd.setCursor(9,1);
-  //lcd.print("BEP:"); 
-  lcd.setCursor(5,0);
-  lcd.print(temp);  
-  lcd.setCursor(5,1);
-  lcd.print(humi);
-  lcd.setCursor(13,0);
-  lcd.print(val,DEC);
-}
-if(flag==1)
-{  
-  lcd.begin(16,2);
-  lcd.print("ALARM TEMP:");
-  lcd.setCursor(11,0);
-  lcd.print(T);
+    digitalWrite(led,LOW);
+    digitalWrite(fmq,HIGH);
+  }
 
-}
-if(flag==2)
-{  
-  lcd.begin(16,2);
-  lcd.print("ALARM  HUMI:");
-  lcd.setCursor(12,0);
-  lcd.print(H);
+  int val;
+  val=analogRead(0);
+  Serial.print("smo:");
+  Serial.println(val,DEC);
+  
+  delay(100);
 
+  if(flag==0)
+  {
+    lcd.begin(16,2);
+    lcd.setCursor(0,0);
+    lcd.print("TEMP:  C");
+    lcd.setCursor(9,0);
+    lcd.print("SMO:");
+    lcd.setCursor(0,1);
+    lcd.print("HUMI:  %");
+    lcd.setCursor(9,1);
+    //lcd.print("BEP:"); 
+    lcd.setCursor(5,0);
+    lcd.print(temp);  
+    lcd.setCursor(5,1);
+    lcd.print(humi);
+    lcd.setCursor(13,0);
+    lcd.print(val,DEC);
+  }
+
+  if(flag==1)
+  {  
+    lcd.begin(16,2);
+    lcd.print("ALARM TEMP:");
+    lcd.setCursor(11,0);
+    lcd.print(T);
+  }
+
+
+  if(flag==2)
+  {
+    lcd.begin(16,2);
+    lcd.print("ALARM  HUMI:");
+    lcd.setCursor(12,0);
+    lcd.print(H);
+  }
 }
-}
+
+//
+//
 void keyScan()
 {
   if(analogRead(BUTTON)>600)
@@ -166,6 +180,9 @@ void keyScan()
      }
    }
 }
+
+//
+//
 void HH()
 {
   if(analogRead(B)>600)
@@ -180,6 +197,9 @@ void HH()
      }
    }
 }
+
+//
+//
 void TT()
 {
   if(analogRead(BU)>600)
