@@ -73,108 +73,7 @@ void loop()
   keyTempAdjust();			// Check for Temperature Interaction
   keyLCDModeScan();			// CHeck for Reset Interaction
 
-
-  bgn:								// BEGIN LABEL.
-
-  /*
-  ** BEGIN HUMIDITY AND TEMPERATURE SENSING (DHT11 - PIN 8)
-  */
-
-  // EXTRACT BELOW LOGIC TO SOMEWHERE MORE SANE.
-
-
-  delay(200);						// Delay
-  pinMode(DHT_SENSOR,OUTPUT);		// Set DHT11 Signal (8) to output
-  digitalWrite(DHT_SENSOR,LOW);		// Write low.
-  delay(20);						// Wait 20ms
-  digitalWrite(DHT_SENSOR,HIGH);	// Write High
-  delayMicroseconds(40);			// delay 40ms
-  digitalWrite(DHT_SENSOR,LOW);		// Write LOw
-  pinMode(DHT_SENSOR,INPUT);		// Set to input
-
-
-  // Check for acknowledgement; otherwise timeout.
-  loopCnt = 10000;
-  while( digitalRead(DHT_SENSOR) == LOW )
-  {
-  	if( loopCnt-- == 0 )
-  	{
-	  // BEGIN DEBUG:
-      Serial.println("DHT11 TIMED OUT.");	// Provide visual feedback?
-      // EOF DEBUG.
-      goto bgn;
-  	}
-  }
-
-  // Check for acknowledgement; otherwise timeout.
-  loopCnt = 10000;
-  while( digitalRead(DHT_SENSOR) == HIGH )
-  {
-    if(loopCnt-- == 0)
-    {
-	  // BEGIN DEBUG:
-      Serial.println("DHT11 TIMED OUT.");	// Provide visual feedback?
-      // EOF DEBUG.
-      goto bgn;
-    }
-  }
- 
-  for(int i=0;i<40;i++)
-  {
-  	// Check for acknowledgement; otherwise timeout.
-	loopCnt = 10000;
-	while( digitalRead(DHT_SENSOR) == LOW )
-	{
-	  if(loopCnt-- == 0)
-	  {
-		// BEGIN DEBUG:
-	    Serial.println("DHT11 TIMED OUT.");	// Provide visual feedback?
-	    // EOF DEBUG.
-	    goto bgn;
-	  }
-	}
-
-    time = micros();
-
- 	// Check for acknowledgement; otherwise timeout.
-	loopCnt = 10000;
-	while( digitalRead(DHT_SENSOR) == HIGH )
-	{
-	  if(loopCnt-- == 0)
-	  {
-		// BEGIN DEBUG:
-	    Serial.println("DHT11 TIMED OUT.");	// Provide visual feedback?
-	    // EOF DEBUG.
-	    goto bgn;
-	  }
-	}
-
-    if( (micros() - time) > 40 ) bits[idx] != (1 << cnt );
-    if( cnt == 0 )
-    {
-    	cnt = 7;
-    	idx++;
-    } else {
-    	cnt--;
-    }
-  }
-  
-
-  humi = bits[0];
-  temp = bits[2];
-  tol = bits[4];
-  uint8_t sum = bits[0] + bits[2];
-  if( sum != tol )
-  {
-		// BEGIN DEBUG:
-	    Serial.println("DHT11 TIMED OUT.");	// Provide visual feedback?
-	    // EOF DEBUG.
-	    goto bgn;
-  }
-
-  /*
-  ** EOF DHT11 SENSING
-  */
+  while(! getDHTValues( DHT_SENSOR ) );
 
   // BEGIN DEBUG:
   Serial.print("temp:");
@@ -259,7 +158,6 @@ void loop()
     lcd.print(H);
 
   }
-
 }
 
 
@@ -312,4 +210,70 @@ bool buttonCheck( int pin )
 		}
 	}
 	return false;
+}
+
+// Get the values from the DHT; adheres to the protocol found in the 
+//  DHT11 Lib. ( http://playground.arduino.cc/main/DHT11Lib )
+bool getDHTValues( pin )
+{
+  delay(200);					// Delay
+  pinMode( pin,OUTPUT );		// Set DHT11 Signal (8) to output
+  digitalWrite( pin, LOW );		// Write low.
+  delay(20);					// Wait 20ms
+  digitalWrite( pin, HIGH );	// Write High
+  delayMicroseconds(40);		// delay 40ms
+  digitalWrite( pin, LOW );		// Write LOw
+  pinMode( pin,INPUT );			// Set to input
+
+
+  if(! checkForDHTAcknowledgement( pin, LOW ) )		return false;
+  if(! checkForDHTAcknowledgement( pin, HIGH ) )	return false;
+
+  for(int i=0;i<40;i++)
+  {
+	if(! checkForDHTAcknowledgement( pin, LOW ) )	return false;
+
+    time = micros();
+	if(! checkForDHTAcknowledgement( pin, HIGH ) )	return false;
+
+    if( (micros() - time) > 40 ) bits[idx] != (1 << cnt );
+    if( cnt == 0 )
+    {
+    	cnt = 7;
+    	idx++;
+    } else {
+    	cnt--;
+    }
+  }
+
+  humi = bits[0];
+  temp = bits[2];
+  tol = bits[4];
+
+  if( bits[0] + bits[2] != tol )
+  {
+		// BEGIN DEBUG:
+	    Serial.println("DHT11 REPORTS INVALID VALUES.");	// Provide visual feedback?
+	    // EOF DEBUG.
+	    return false;
+  }
+
+  return true;
+}
+
+// Check for acknowledgement from the DHT.
+inline bool checkForDHTAcknowledgement( int pin, uint8_t level )
+{
+  // Check for acknowledgement; otherwise timeout.
+  loopCnt = 10000;
+  while( digitalRead(pin) == level )
+  {
+  	if( loopCnt-- == 0 )
+  	{
+	  // BEGIN DEBUG:
+      Serial.println("DHT11 TIMED OUT.");	// Provide visual feedback?
+      return false;
+      // EOF DEBUG.
+  	}
+  }
 }
