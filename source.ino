@@ -9,33 +9,53 @@
 
 #include <LiquidCrystal.h>
 
-LiquidCrystal lcd(12,11,5,4,3,2);
-int temp;
-int humi;
-int tol;
-int j;
-int H=50;
-int T=25;
-int B=1;
-int flag=0;
-int led=7;
-int LED=9;
-int BU=2;
-int BUTTON=3;
-int FMQ=13;
-int fmq=10;
-unsigned int loopCnt;
-int chr[40] = {0};
-unsigned long time;
-#define pin 8
+//
+// CONSTANTS
+//
+
+// - STATES
+#define LCD_OUTPUT_ALL 0
+#define LCD_OUTPUT_TEMP 1
+#define LCD_OUTPUT_HUMI 2
+
+// - PINS
+#define BTN_ADJUST_HUMI 1
+#define BTN_ADJUST_TEMP 2
+#define BTN_ADJUST_LCD 3
+#define LED_RED 7
+#define LED_GRE 9
+#define FMQ 13
+#define DHT_SENSOR 8
+
+// - LCD PINS (Hitache HD44780 Compat.)
+#define LCD_ENABLE 11
+#define LCD_RS 12
+#define LCD_D4 5
+#define LCD_D5 4
+#define LCD_D6 3
+#define LCD_D7 2
+
+
+// Component Objects
+LiquidCrystal lcd( LCD_RS, LCD_ENABLE, LCD_D4, LCD_D5, LCD_D6, LCD_D7 );
+
+// Variables
+int temp, humi, tol;	// Hold readings from DHT11
+int lcdOutput=0;		// State variable: Contains LCD Output Mode
+
+int H=50;				// Humidity Threshold
+int T=25;				// Temperature Threshold
+
+unsigned int loopCnt;	// Loop Counter
+int chr[40] = {0};		// Buffer, Store DHT11 Output as binary
+unsigned long time;		// Time
 
 //
 void setup()
 { 
-  pinMode(fmq,OUTPUT);
   pinMode(FMQ,OUTPUT);
-  pinMode(LED,OUTPUT);
-  pinMode(led,OUTPUT);
+  pinMode(LED_RED,OUTPUT);
+  pinMode(LED_GRE,OUTPUT);
 
   // BEGIN DEBUG:
   Serial.begin(9600);
@@ -47,7 +67,7 @@ void loop()
 {
   keyHumidityAdjust();		// Check for Humidity Interaction
   keyTempAdjust();			// Check for Temperature Interaction
-  keyResetScan();			// CHeck for Reset Interaction
+  keyLCDModeScan();			// CHeck for Reset Interaction
 
 
   bgn:								// BEGIN LABEL.
@@ -58,16 +78,16 @@ void loop()
 
   // EXTRACT BELOW LOGIC TO SOMEWHERE MORE SANE.
   delay(200);						// Delay
-  pinMode(pin,OUTPUT);				// Set DHT11 Signal (8) to output
-  digitalWrite(pin,LOW);			// Write low.
+  pinMode(DHT_SENSOR,OUTPUT);				// Set DHT11 Signal (8) to output
+  digitalWrite(DHT_SENSOR,LOW);			// Write low.
   delay(20);						// Wait 20ms
-  digitalWrite(pin,HIGH);			// Write High
+  digitalWrite(DHT_SENSOR,HIGH);			// Write High
   delayMicroseconds(40);			// delay 40ms
-  digitalWrite(pin,LOW);			// Write LOw
-  pinMode(pin,INPUT);				// Set to input
+  digitalWrite(DHT_SENSOR,LOW);			// Write LOw
+  pinMode(DHT_SENSOR,INPUT);				// Set to input
   loopCnt=10000;
   
-  while(digitalRead(pin) != HIGH)
+  while(digitalRead(DHT_SENSOR) != HIGH)
   {
     if(loopCnt-- == 0)
     {
@@ -79,7 +99,7 @@ void loop()
   }
   
   loopCnt=30000;
-  while(digitalRead(pin) != LOW)
+  while(digitalRead(DHT_SENSOR) != LOW)
   {
     if(loopCnt-- == 0)
     {
@@ -92,10 +112,10 @@ void loop()
  
   for(int i=0;i<40;i++)
   {
-    while(digitalRead(pin) == LOW)
+    while(digitalRead(DHT_SENSOR) == LOW)
     {}
     time = micros();
-    while(digitalRead(pin) == HIGH)
+    while(digitalRead(DHT_SENSOR) == HIGH)
     {}
     if (micros() - time >50)
     {
@@ -129,12 +149,12 @@ void loop()
   if(temp>T)
   {
   	// Green LED (9) ON (For when temperature is *too high*? GREEN?)
-    digitalWrite(LED,HIGH);
+    digitalWrite(LED_GRE,HIGH);
     // Buzzer (10) on LOW
     digitalWrite(FMQ,LOW);
   }else{
   	// Green LED OFF
-    digitalWrite(LED,LOW);
+    digitalWrite(LED_GRE,LOW);
     // Buzzer on HIGH
     digitalWrite(FMQ,HIGH);
   } 
@@ -143,12 +163,12 @@ void loop()
   if(humi>H)
   {
   	// Red LED ON (7)
-    digitalWrite(led,HIGH);
+    digitalWrite(LED_RED,HIGH);
     // Buzzer on LOW (13)
     digitalWrite(fmq,LOW);
   }else{
   	// Red LED OFF (7)
-    digitalWrite(led,LOW);
+    digitalWrite(LED_RED,LOW);
     // Buzzer on HIGH (13)
     digitalWrite(fmq,HIGH);
   }
@@ -165,10 +185,11 @@ void loop()
 
   delay(100);
 
-  // If All is OK; Draw variables on LCD.
-  if(flag==0)
+  // Check for current LCD Output Mode
+  if( LCD_OUTPUT_ALL == lcdOutput )
   {
-    lcd.begin(16,2);
+
+  	lcd.begin(16,2);
     lcd.setCursor(0,0);
     lcd.print("TEMP:  C");
     lcd.setCursor(9,0);
@@ -176,45 +197,40 @@ void loop()
     lcd.setCursor(0,1);
     lcd.print("HUMI:  %");
     lcd.setCursor(9,1);
-    //lcd.print("BEP:"); 
     lcd.setCursor(5,0);
     lcd.print(temp);  
     lcd.setCursor(5,1);
     lcd.print(humi);
     lcd.setCursor(13,0);
     lcd.print(val,DEC);
-  }
+  
+  } else if( LCD_OUTPUT_TEMP == lcdOutput ) {
 
-  // If temperature is too high, draw alert on LCD.
-  if(flag==1)
-  {  
     lcd.begin(16,2);
-    lcd.print("ALARM TEMP:");
+    lcd.print("TEMP: ");
     lcd.setCursor(11,0);
     lcd.print(T);
-  }
 
-  // If humidity is too high, draw alert on LCD.
-  if(flag==2)
-  {
+  } else if( LCD_OUTPUT_HUMI == lcdOutput ) {
+
     lcd.begin(16,2);
-    lcd.print("ALARM  HUMI:");
+    lcd.print("HUMI: ");
     lcd.setCursor(12,0);
     lcd.print(H);
+
   }
+
 }
 
 
-// Detect BUTTON presses on Pin A3, and - I think - reset the alarm?
-//  Doesn't actually make a great deal of sense to be honest, alarm
-//  will automatically go off again unless the environmental factor
-//  is rectified, and then the alarm will stop automatically anyway.
-void keyScan()
+// Detect BUTTON presses on Pin A3, and switch the LCD display 
+// output format.
+void keyLCDModeScan()
 {
-	if( buttonCheck( BUTTON ) )
+	if( buttonCheck( BTN_ADJUST_LCD ) )
 	{
-		flag++;
-		if( flag > 2 ) flag = 0;
+		lcdOutput++;
+		if( lcdOutput > 2 ) lcdOutput = 0;
 	}
 }
 
@@ -223,7 +239,7 @@ void keyScan()
 //  Some form of UI feedback (LCD and DEBUG?) would be nice.
 void keyHumidityAdjust()
 {
-	if( buttonCheck( B ) )
+	if( buttonCheck( BTN_ADJUST_HUMI ) )
 	{
 		H++;
 		if( H > 60 ) H = 40;
@@ -236,7 +252,7 @@ void keyHumidityAdjust()
 //  Some form of UI feedback (LCD and DEBUG?) would be nice.
 void keyTempAdjust()
 {
-	if( buttonCheck( BU ) )
+	if( buttonCheck( BTN_ADJUST_TEMP ) )
 	{
 		T++;
 		if( T > 30 ) T = 20;
