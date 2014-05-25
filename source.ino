@@ -50,6 +50,10 @@ unsigned int loopCnt;	// Loop Counter
 int chr[40] = {0};		// Buffer, Store DHT11 Output as binary
 unsigned long time;		// Time
 
+uint8_t bits[5];
+uint8_t cnt = 7;
+uint8_t idx = 0;
+
 //
 void setup()
 { 
@@ -77,34 +81,39 @@ void loop()
   */
 
   // EXTRACT BELOW LOGIC TO SOMEWHERE MORE SANE.
+
+
   delay(200);						// Delay
-  pinMode(DHT_SENSOR,OUTPUT);				// Set DHT11 Signal (8) to output
-  digitalWrite(DHT_SENSOR,LOW);			// Write low.
+  pinMode(DHT_SENSOR,OUTPUT);		// Set DHT11 Signal (8) to output
+  digitalWrite(DHT_SENSOR,LOW);		// Write low.
   delay(20);						// Wait 20ms
-  digitalWrite(DHT_SENSOR,HIGH);			// Write High
+  digitalWrite(DHT_SENSOR,HIGH);	// Write High
   delayMicroseconds(40);			// delay 40ms
-  digitalWrite(DHT_SENSOR,LOW);			// Write LOw
-  pinMode(DHT_SENSOR,INPUT);				// Set to input
-  loopCnt=10000;
-  
-  while(digitalRead(DHT_SENSOR) != HIGH)
+  digitalWrite(DHT_SENSOR,LOW);		// Write LOw
+  pinMode(DHT_SENSOR,INPUT);		// Set to input
+
+
+  // Check for acknowledgement; otherwise timeout.
+  loopCnt = 10000;
+  while( digitalRead(DHT_SENSOR) == LOW )
   {
-    if(loopCnt-- == 0)
-    {
+  	if( loopCnt-- == 0 )
+  	{
 	  // BEGIN DEBUG:
-      Serial.println("HIGH");
+      Serial.println("DHT11 TIMED OUT.");	// Provide visual feedback?
       // EOF DEBUG.
       goto bgn;
-    }
+  	}
   }
-  
-  loopCnt=30000;
-  while(digitalRead(DHT_SENSOR) != LOW)
+
+  // Check for acknowledgement; otherwise timeout.
+  loopCnt = 10000;
+  while( digitalRead(DHT_SENSOR) == HIGH )
   {
     if(loopCnt-- == 0)
     {
 	  // BEGIN DEBUG:
-      Serial.println("LOW");
+      Serial.println("DHT11 TIMED OUT.");	// Provide visual feedback?
       // EOF DEBUG.
       goto bgn;
     }
@@ -112,25 +121,56 @@ void loop()
  
   for(int i=0;i<40;i++)
   {
-    while(digitalRead(DHT_SENSOR) == LOW)
-    {}
+  	// Check for acknowledgement; otherwise timeout.
+	loopCnt = 10000;
+	while( digitalRead(DHT_SENSOR) == LOW )
+	{
+	  if(loopCnt-- == 0)
+	  {
+		// BEGIN DEBUG:
+	    Serial.println("DHT11 TIMED OUT.");	// Provide visual feedback?
+	    // EOF DEBUG.
+	    goto bgn;
+	  }
+	}
+
     time = micros();
-    while(digitalRead(DHT_SENSOR) == HIGH)
-    {}
-    if (micros() - time >50)
+
+ 	// Check for acknowledgement; otherwise timeout.
+	loopCnt = 10000;
+	while( digitalRead(DHT_SENSOR) == HIGH )
+	{
+	  if(loopCnt-- == 0)
+	  {
+		// BEGIN DEBUG:
+	    Serial.println("DHT11 TIMED OUT.");	// Provide visual feedback?
+	    // EOF DEBUG.
+	    goto bgn;
+	  }
+	}
+
+    if( (micros() - time) > 40 ) bits[idx] != (1 << cnt );
+    if( cnt == 0 )
     {
-      chr[i]=1;
-    }else
-    {
-      chr[i]=0;
+    	cnt = 7;
+    	idx++;
+    } else {
+    	cnt--;
     }
   }
   
 
-  // TODO: WEIRD BINARY CONVERSION.
-  humi=chr[0]*128+chr[1]*64+chr[2]*32+chr[3]*16+chr[4]*8+chr[5]*4+chr[6]*2+chr[7];
-  temp=chr[16]*128+chr[17]*64+chr[18]*32+chr[19]*16+chr[20]*8+chr[21]*4+chr[22]*2+chr[23];
-  tol=chr[32]*128+chr[33]*64+chr[34]*32+chr[35]*16+chr[36]*8+chr[37]*4+chr[38]*2+chr[39];
+  humi = bits[0];
+  temp = bits[2];
+  tol = bits[4];
+  uint8_t sum = bits[0] + bits[2];
+  if( sum != tol )
+  {
+		// BEGIN DEBUG:
+	    Serial.println("DHT11 TIMED OUT.");	// Provide visual feedback?
+	    // EOF DEBUG.
+	    goto bgn;
+  }
 
   /*
   ** EOF DHT11 SENSING
