@@ -48,16 +48,8 @@ LiquidCrystal lcd( LCD_RS, LCD_ENABLE, LCD_D4, LCD_D5, LCD_D6, LCD_D7 );
 int temp, humi, tol;	// Hold readings from DHT11
 int lcdOutput=0;		// State variable: Contains LCD Output Mode
 
-int H=50;				// Humidity Threshold
-int T=25;				// Temperature Threshold
-
-unsigned int loopCnt;	// Loop Counter
-int chr[40] = {0};		// Buffer, Store DHT11 Output as binary
-unsigned long time;		// Time
-
-uint8_t bits[5];
-uint8_t cnt = 7;
-uint8_t idx = 0;
+int maxHumi=50;			// Humidity Threshold
+int maxTemp=25;			// Temperature Threshold
 
 //
 void setup()
@@ -90,7 +82,7 @@ void loop()
   // EOF DEBUG.
 
   // If temperature is too high
-  if(temp>T)
+  if(temp > maxTemp)
   {
     digitalWrite(LED_GRE,HIGH); 	// Green LED (9) ON (For when temperature is *too high*? GREEN?)
     digitalWrite(FMQ,LOW);    		// Buzzer (10) on LOW
@@ -100,13 +92,13 @@ void loop()
   } 
 
   // If humidity is too high
-  if(humi>H)
+  if(humi > maxHumi)
   {
     digitalWrite(LED_RED,HIGH);  	// Red LED ON (7)
-    digitalWrite(fmq,LOW);  	    // Buzzer on LOW (13)
+    digitalWrite(FMQ,LOW);  	    // Buzzer on LOW (13)
   }else{
     digitalWrite(LED_RED,LOW);  	// Red LED OFF (7)
-    digitalWrite(fmq,HIGH); 	   // Buzzer on HIGH (13)
+    digitalWrite(FMQ, HIGH); 	   // Buzzer on HIGH (13)
   }
 
   // Get Smoke status... Then do nothing with the value apart 
@@ -143,16 +135,16 @@ void loop()
   } else if( LCD_OUTPUT_TEMP == lcdOutput ) {
 
     lcd.begin(16,2);
-    lcd.print("TEMP: ");
+    lcd.print("ALARM TEMP: ");
     lcd.setCursor(11,0);
-    lcd.print(T);
+    lcd.print(maxTemp);
 
   } else if( LCD_OUTPUT_HUMI == lcdOutput ) {
 
     lcd.begin(16,2);
-    lcd.print("HUMI: ");
+    lcd.print("ALARM HUMI: ");	// Perhaps display the current val as well as the max val?
     lcd.setCursor(12,0);
-    lcd.print(H);
+    lcd.print(maxHumi);
 
   }
 }
@@ -176,8 +168,8 @@ void keyHumidityAdjust()
 {
 	if( buttonCheck( BTN_ADJUST_HUMI ) )
 	{
-		H++;
-		if( H > 60 ) H = 40;
+		maxHumi++;
+		if( maxHumi > 60 ) maxHumi = 40;
 	}
 }
 
@@ -189,8 +181,8 @@ void keyTempAdjust()
 {
 	if( buttonCheck( BTN_ADJUST_TEMP ) )
 	{
-		T++;
-		if( T > 30 ) T = 20;
+		maxTemp++;
+		if( maxTemp > 30 ) maxTemp = 20;
 	}
 }
 
@@ -211,62 +203,66 @@ bool buttonCheck( int pin )
 
 // Get the values from the DHT; adheres to the protocol found in the 
 //  DHT11 Lib. ( http://playground.arduino.cc/main/DHT11Lib )
-bool getDHTValues( pin )
+bool getDHTValues( int pin )
 {
-  delay(200);					// Delay
-  pinMode( pin,OUTPUT );		// Set DHT11 Signal (8) to output
-  digitalWrite( pin, LOW );		// Write low.
-  delay(20);					// Wait 20ms
-  digitalWrite( pin, HIGH );	// Write High
-  delayMicroseconds(40);		// delay 40ms
-  digitalWrite( pin, LOW );		// Write LOw
-  pinMode( pin,INPUT );			// Set to input
+	unsigned long time;		// Time
+	uint8_t bits[5];
+	uint8_t cnt = 7;
+	uint8_t idx = 0;
+	
+	delay(200);					// Delay
+	pinMode( pin,OUTPUT );		// Set DHT11 Signal (8) to output
+	digitalWrite( pin, LOW );		// Write low.
+	delay(20);					// Wait 20ms
+	digitalWrite( pin, HIGH );	// Write High
+	delayMicroseconds(40);		// delay 40ms
+	digitalWrite( pin, LOW );		// Write LOw
+	pinMode( pin,INPUT );			// Set to input
 
-
-  if(! checkForDHTAcknowledgement( pin, LOW ) )		return false;
-  if(! checkForDHTAcknowledgement( pin, HIGH ) )	return false;
-
-  for(int i=0;i<40;i++)
-  {
 	if(! checkForDHTAcknowledgement( pin, LOW ) )	return false;
-
-    time = micros();
 	if(! checkForDHTAcknowledgement( pin, HIGH ) )	return false;
 
-    if( (micros() - time) > 40 ) bits[idx] != (1 << cnt );
-    if( cnt == 0 )
-    {
-    	cnt = 7;
-    	idx++;
-    } else {
-    	cnt--;
-    }
-  }
+	for(int i=0;i<40;i++)
+	{
+		if(! checkForDHTAcknowledgement( pin, LOW ) )	return false;
 
-  humi = bits[0];
-  temp = bits[2];
-  tol = bits[4];
+		time = micros();
+		if(! checkForDHTAcknowledgement( pin, HIGH ) )	return false;
 
-  if( bits[0] + bits[2] != tol )
-  {
-	    DEBUG_SEND("DHT11 REPORTS INVALID VALUES.");	// Provide visual feedback?
+		if( (micros() - time) > 40 ) bits[idx] != (1 << cnt );
+		if( cnt == 0 )
+		{
+			cnt = 7;
+			idx++;
+		} else {
+			cnt--;
+		}
+	}
+
+	humi = bits[0];
+	temp = bits[2];
+	tol = bits[4];
+
+	if( bits[0] + bits[2] != tol )
+	{
+		DEBUG_SEND("DHT11 REPORTS INVALID VALUES.");	// Provide visual feedback?
 	    return false;
-  }
+	}
 
-  return true;
+	return true;
 }
 
 // Check for acknowledgement from the DHT.
 inline bool checkForDHTAcknowledgement( int pin, uint8_t level )
 {
-  // Check for acknowledgement; otherwise timeout.
-  loopCnt = 10000;
-  while( digitalRead(pin) == level )
-  {
-  	if( loopCnt-- == 0 )
-  	{
-      DEBUG_SEND("DHT11 TIMED OUT.");	// Provide visual feedback?
-      return false;
-  	}
-  }
+	// Check for acknowledgement; otherwise timeout.
+	unsigned int loopCnt = 10000;
+	while( digitalRead(pin) == level )
+	{
+		if( loopCnt-- == 0 )
+		{
+			DEBUG_SEND("DHT11 TIMED OUT.");	// Provide visual feedback?
+			return false;
+		}
+	}
 }
