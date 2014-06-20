@@ -1,5 +1,5 @@
-/* 
-** Source code to ICStation's 
+/*
+** Source code to ICStation's
 **  "Temperature & Humidity & Smoke Detector Alarm System Kit"
 **   http://www.icstation.com/product_info.php?products_id=3665#.U4IX4h89jC0
 **
@@ -36,8 +36,8 @@
 #define LCD_D7 2
 
 #ifdef DEBUG
-#define DEBUG_SEND( msg ) Serial.println( msg );
-#else 
+#define DEBUG_SEND( msg ) DEBUG_SEND( msg );
+#else
 #define DEBUG_SEND( msg )
 #endif
 
@@ -53,7 +53,7 @@ int maxTemp=25;			// Temperature Threshold
 
 //
 void setup()
-{ 
+{
   pinMode(FMQ,OUTPUT);
   pinMode(LED_RED,OUTPUT);
   pinMode(LED_GRE,OUTPUT);
@@ -74,11 +74,11 @@ void loop()
 
   // BEGIN DEBUG:
   Serial.print("temp:");
-  Serial.println(temp);
+  DEBUG_SEND(temp);
   Serial.print("humi:");
-  Serial.println(humi);
+  DEBUG_SEND(humi);
   Serial.print("tol:");
-  Serial.println(tol);
+  DEBUG_SEND(tol);
   // EOF DEBUG.
 
   // If temperature is too high
@@ -89,7 +89,7 @@ void loop()
   }else{
     digitalWrite(LED_GRE,LOW);   	// Green LED OFF
     digitalWrite(FMQ,HIGH);
-  } 
+  }
 
   // If humidity is too high
   if(humi > maxHumi)
@@ -101,7 +101,7 @@ void loop()
     digitalWrite(FMQ, HIGH); 	   // Buzzer on HIGH (13)
   }
 
-  // Get Smoke status... Then do nothing with the value apart 
+  // Get Smoke status... Then do nothing with the value apart
   //  from output to LCD?!
   int val;
   val=analogRead(0);
@@ -126,12 +126,12 @@ void loop()
     lcd.print("HUMI:  %");
     lcd.setCursor(9,1);
     lcd.setCursor(5,0);
-    lcd.print(temp);  
+    lcd.print(temp);
     lcd.setCursor(5,1);
     lcd.print(humi);
     lcd.setCursor(13,0);
     lcd.print(val,DEC);
-  
+
   } else if( LCD_OUTPUT_TEMP == lcdOutput ) {
 
     lcd.begin(16,2);
@@ -150,7 +150,7 @@ void loop()
 }
 
 
-// Detect BUTTON presses on Pin A3, and switch the LCD display 
+// Detect BUTTON presses on Pin A3, and switch the LCD display
 // output format.
 void keyLCDModeScan()
 {
@@ -173,8 +173,8 @@ void keyHumidityAdjust()
 	}
 }
 
-// Detect BUTTON presses on Pin A2, and increase temperature 
-//  threshold. Should temperature be set above 31, revert back 
+// Detect BUTTON presses on Pin A2, and increase temperature
+//  threshold. Should temperature be set above 31, revert back
 //  to 20.
 //  Some form of UI feedback (LCD and DEBUG?) would be nice.
 void keyTempAdjust()
@@ -201,7 +201,7 @@ bool buttonCheck( int pin )
 	return false;
 }
 
-// Get the values from the DHT; adheres to the protocol found in the 
+// Get the values from the DHT; adheres to the protocol found in the
 //  DHT11 Lib. ( http://playground.arduino.cc/main/DHT11Lib )
 bool getDHTValues( int pin )
 {
@@ -209,7 +209,7 @@ bool getDHTValues( int pin )
 	uint8_t bits[5];
 	uint8_t cnt = 7;
 	uint8_t idx = 0;
-	
+
 	delay(200);					// Delay
 	pinMode( pin,OUTPUT );		// Set DHT11 Signal (8) to output
 	digitalWrite( pin, LOW );		// Write low.
