@@ -157,7 +157,7 @@ void lcd_OutputAll()
 void lcd_OutputTemp()
 {
   lcd.begin(16,2);
-  lcd.print("ALARM TEMP: ");
+  lcd.print("ALARM TEMP: "); 	// Perhaps display the current val as well as the max val?!?
   lcd.setCursor(11,0);
   lcd.print(maxTemp);
 }
