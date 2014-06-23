@@ -119,11 +119,6 @@ bool buttonCheck( int pin )
 
 
 /*
-** OUTPUT METHODS
-*/
-
-
-/*
 ** LCD OUTPUT METHODS.
 */
 
@@ -140,9 +135,9 @@ void lcd_OutputAll()
   lcd.print("HUMI:  %");
   lcd.setCursor(9,1);
   lcd.setCursor(5,0);
-  lcd.print( ( sensors.temp > 0 ) ? sensors.temp : 'ERR' );
+  lcd.print( ( sensors.temp > 0 ) ? sensors.temp : "ERR" );
   lcd.setCursor(5,1);
-  lcd.print( ( sensors.humi > 0 ) ? sensors.humi : 'ERR' );
+  lcd.print( ( sensors.humi > 0 ) ? sensors.humi : "ERR" );
   lcd.setCursor(13,0);
   lcd.print( (sensors.smoke) ? 1 : 0 );
 }
