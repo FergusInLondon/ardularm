@@ -24,10 +24,10 @@ void setup()
   pinMode(LED_RED,OUTPUT);
   pinMode(LED_GRE,OUTPUT);
 
-  Sensors.minTemp = TEMP_MIN;
-  Sensors.maxTemp = TEMP_MAX;
-  Sensors.minHumi = HUMI_MIN;
-  Sensors.maxHumi = HUMI_MAX;
+  sensors.minTemp = TEMP_MIN;
+  sensors.maxTemp = TEMP_MAX;
+  sensors.minHumi = HUMI_MIN;
+  sensors.maxHumi = HUMI_MAX;
 
   #ifdef DEBUG
   Serial.begin(9600);
@@ -38,8 +38,8 @@ void setup()
 void loop()
 {
 
-  keyIncrementer( BTN_ADJUST_HUMI, Sensors.minHumi, Sensors.maxHumi, &maxHumi );
-  keyIncrementer( BTN_ADJUST_TEMP, Sensors.minTemp, Sensors.maxTemp, &maxtemp );
+  keyIncrementer( BTN_ADJUST_HUMI, sensors.minHumi, sensors.maxHumi, &maxHumi );
+  keyIncrementer( BTN_ADJUST_TEMP, sensors.minTemp, sensors.maxTemp, &maxtemp );
   keyIncrementer( BTN_ADJUST_LCD, 0, 2, lcdOutput );
 
   keyHumidityAdjust();		// Check for Humidity Interaction
@@ -50,15 +50,15 @@ void loop()
 
   // BEGIN DEBUG:
   DEBUG_SEND("temp:");
-  DEBUG_SEND(temp);
+  DEBUG_SEND(sensors.temp);
   DEBUG_SEND("humi:");
-  DEBUG_SEND(humi);
+  DEBUG_SEND(sensors.humi);
   DEBUG_SEND("tol:");
-  DEBUG_SEND(tol);
+  DEBUG_SEND(sensors.tol);
   // EOF DEBUG.
 
   // If temperature is too high
-  if(temp > maxTemp){
+  if(sensors.temp > sensors.maxTemp){
     digitalWrite(LED_GRE,HIGH); 	// Green LED (9) ON (For when temperature is *too high*? GREEN?)
     digitalWrite(FMQ,LOW);    		// Buzzer (10) on LOW
   }else{
@@ -67,7 +67,7 @@ void loop()
   }
 
   // If humidity is too high
-  if(humi > maxHumi){
+  if(sensors.humi > sensors.maxHumi){
     digitalWrite(LED_RED,HIGH);  	// Red LED ON (7)
     digitalWrite(FMQ,LOW);  	    // Buzzer on LOW (13)
   }else{
@@ -147,12 +147,12 @@ void lcd_OutputAll()
   lcd.print("HUMI:  %");
   lcd.setCursor(9,1);
   lcd.setCursor(5,0);
-  lcd.print(temp);
+  lcd.print(sensors.temp);
   lcd.setCursor(5,1);
-  lcd.print(humi);
+  lcd.print(sensors.humi);
   lcd.setCursor(13,0);
   lcd.print(val,DEC);
-}
+}sensors.
 
 void lcd_OutputTemp()
 {
