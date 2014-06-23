@@ -53,8 +53,8 @@ typedef struct {
   int sensMaxHumi;
 
   // Sensor User defined ranges.
-  int maxTemp;
-  int maxHumi;
+  int userMaxTemp;
+  int userMaxHumi;
 
   // Sensor Readings
   bool smoke;
