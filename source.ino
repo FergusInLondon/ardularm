@@ -8,38 +8,19 @@
 */
 
 #include <LiquidCrystal.h>
+#include "ardualarm.h"
 
-//
-// CONSTANTS
-//
-
-// - STATES
-#define LCD_OUTPUT_ALL 0
-#define LCD_OUTPUT_TEMP 1
-#define LCD_OUTPUT_HUMI 2
-
-// - PINS
-#define BTN_ADJUST_HUMI 1
-#define BTN_ADJUST_TEMP 2
-#define BTN_ADJUST_LCD 3
-#define LED_RED 7
-#define LED_GRE 9
-#define FMQ 13
-#define DHT_SENSOR 8
-
-// - LCD PINS (Hitache HD44780 Compat.)
-#define LCD_ENABLE 11
-#define LCD_RS 12
-#define LCD_D4 5
-#define LCD_D5 4
-#define LCD_D6 3
-#define LCD_D7 2
-
-#ifdef DEBUG
-#define DEBUG_SEND( msg ) Serial.println( msg );
-#else 
-#define DEBUG_SEND( msg )
-#endif
+// State enumeration - allows us to hold the entirety of our state in an 8bit int.
+enum State {
+	OUT_R_LED	= 0x01,
+	OUT_G_LED	= 0x02,
+	OUT_BUZZE	= 0x04,
+	IN_SMOKE	= 0x08,
+	//			= 0x10,
+	IN_TEMP_H	= 0x20,
+	//
+	IN_HUMI_H	= 0x80
+};
 
 // Component Objects
 LiquidCrystal lcd( LCD_RS, LCD_ENABLE, LCD_D4, LCD_D5, LCD_D6, LCD_D7 );
@@ -50,6 +31,8 @@ int lcdOutput=0;		// State variable: Contains LCD Output Mode
 
 int maxHumi=50;			// Humidity Threshold
 int maxTemp=25;			// Temperature Threshold
+
+uint8_t state = 0;
 
 //
 void setup()
@@ -81,37 +64,8 @@ void loop()
   Serial.println(tol);
   // EOF DEBUG.
 
-  // If temperature is too high
-  if(temp > maxTemp)
-  {
-    digitalWrite(LED_GRE,HIGH); 	// Green LED (9) ON (For when temperature is *too high*? GREEN?)
-    digitalWrite(FMQ,LOW);    		// Buzzer (10) on LOW
-  }else{
-    digitalWrite(LED_GRE,LOW);   	// Green LED OFF
-    digitalWrite(FMQ,HIGH);
-  } 
-
-  // If humidity is too high
-  if(humi > maxHumi)
-  {
-    digitalWrite(LED_RED,HIGH);  	// Red LED ON (7)
-    digitalWrite(FMQ,LOW);  	    // Buzzer on LOW (13)
-  }else{
-    digitalWrite(LED_RED,LOW);  	// Red LED OFF (7)
-    digitalWrite(FMQ, HIGH); 	   // Buzzer on HIGH (13)
-  }
-
-  // Get Smoke status... Then do nothing with the value apart 
-  //  from output to LCD?!
-  int val;
-  val=analogRead(0);
-
-  // BEGIN DEBUG:
-  DEBUG_SEND("smo:");
-  DEBUG_SEND(val);
-  // EOF DEBUG.
-
   delay(100);
+  updateState();
 
   // Check for current LCD Output Mode
   if( LCD_OUTPUT_ALL == lcdOutput )
@@ -266,3 +220,37 @@ inline bool checkForDHTAcknowledgement( int pin, uint8_t level )
 		}
 	}
 }
+
+void updateState( )
+{
+	uint8_t newState;
+
+	// Set state variables for sensors
+	newState |= ( humi > maxHumi ) << 8;
+	newState |= ( temp > maxTemp ) << 6;
+	newState |= ( analogRead(0) )	<< 4;
+
+	// One of the First 4 bits has been activated;
+	//  meaning a sensor has detected a dangerous reading.
+	if( newState & 0x0F ){
+		bool toggleAll = false;
+		if( newState & IN_SMOKE ) toggleAll = true;
+		if( newState & IN_HUMI_H || toggleAll ) newState |= 1 << 1;
+		if( newState & IN_TEMP_H || toggleAll ) newState |= 1 << 2; 
+	}
+
+	// If our state is different than the last reading, then lets update
+	//  our global state and refresh our outputs.
+	if( newState != state ){
+		state = newState;
+		updateIndicators();
+	}
+}
+
+void updateIndicators()
+{
+	digitalWrite( LED_GRE, ( state & OUT_G_LED ) );
+	digitalWrite( LED_RED, ( state & OUT_R_LED ) );
+	digitalWrite( FMQ, (! OUT_BUZZE ) );
+}
+
