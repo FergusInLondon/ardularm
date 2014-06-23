@@ -35,6 +35,14 @@
 #define LCD_D6 3
 #define LCD_D7 2
 
+// BOUNDS
+#define HUMI_MAX
+#define HUMI_MIN
+#define TEMP_MAX
+#define TEMP_MIN
+
+
+
 #ifdef DEBUG
 #define DEBUG_SEND( msg ) DEBUG_SEND( msg );
 #else
@@ -66,6 +74,11 @@ void setup()
 //
 void loop()
 {
+
+  keyIncrementer( BTN_ADJUST_HUMI, HUMI_MIN, HUMI_MAX, &maxHumi );
+  keyIncrementer( BTN_ADJUST_TEMP, TEMP_MIN, TEMP_MAX, &maxtemp );
+  keyIncrementer( BTN_ADJUST_LCD, 0, 2, lcdOutput );
+
   keyHumidityAdjust();		// Check for Humidity Interaction
   keyTempAdjust();			// Check for Temperature Interaction
   keyLCDModeScan();			// CHeck for Reset Interaction
@@ -73,11 +86,11 @@ void loop()
   while(! getDHTValues( DHT_SENSOR ) );
 
   // BEGIN DEBUG:
-  Serial.print("temp:");
+  DEBUG_SEND("temp:");
   DEBUG_SEND(temp);
-  Serial.print("humi:");
+  DEBUG_SEND("humi:");
   DEBUG_SEND(humi);
-  Serial.print("tol:");
+  DEBUG_SEND("tol:");
   DEBUG_SEND(tol);
   // EOF DEBUG.
 
@@ -149,41 +162,15 @@ void loop()
   }
 }
 
-
-// Detect BUTTON presses on Pin A3, and switch the LCD display
-// output format.
-void keyLCDModeScan()
+// Check btnPin for a press, if so - increment associated var,
+//  do bounds checking - lowering if required.
+void keyIncrementer( int btnPin, int lower, int upper, int &cur )
 {
-	if( buttonCheck( BTN_ADJUST_LCD ) )
-	{
-		lcdOutput++;
-		if( lcdOutput > 2 ) lcdOutput = 0;
-	}
-}
-
-// Detect BUTTON presses on Pin A1, and increase humidity threshold.
-//  Should humidity be set above 61, revert back to 20.
-//  Some form of UI feedback (LCD and DEBUG?) would be nice.
-void keyHumidityAdjust()
-{
-	if( buttonCheck( BTN_ADJUST_HUMI ) )
-	{
-		maxHumi++;
-		if( maxHumi > 60 ) maxHumi = 40;
-	}
-}
-
-// Detect BUTTON presses on Pin A2, and increase temperature
-//  threshold. Should temperature be set above 31, revert back
-//  to 20.
-//  Some form of UI feedback (LCD and DEBUG?) would be nice.
-void keyTempAdjust()
-{
-	if( buttonCheck( BTN_ADJUST_TEMP ) )
-	{
-		maxTemp++;
-		if( maxTemp > 30 ) maxTemp = 20;
-	}
+  if( buttonCheck( btnPin ) )
+  {
+    cur++;
+    if( cur > upper ) cur = lower;
+  }
 }
 
 // Check for a button press on a given PIN.
