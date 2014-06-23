@@ -1,3 +1,7 @@
+//
+// CONSTANTS
+//
+
 // - STATES
 #define LCD_OUTPUT_ALL 0
 #define LCD_OUTPUT_TEMP 1
@@ -20,9 +24,41 @@
 #define LCD_D6 3
 #define LCD_D7 2
 
-// - DEBUG MACRO
+// BOUNDS
+#define HUMI_MAX 50
+#define HUMI_MIN
+#define TEMP_MAX 25
+#define TEMP_MIN
+
+/*
+** MACROS
+*/
+
+// DEBUG TO SERIAL
 #ifdef DEBUG
-#define DEBUG_SEND( msg ) Serial.println( msg );
-#else 
+#define DEBUG_SEND( msg ) Serial.print( msg );
+#else
 #define DEBUG_SEND( msg )
 #endif
+
+/*
+** TYPE DEFINITIONS
+*/
+
+typedef struct {
+  int minTemp;
+  int maxTemp;
+  int minHumi;
+  int maxHumi;
+
+  bool smoke;
+  int temp;
+  int humi;
+  int tol;
+} Sensors;
+
+typedef enum {
+  ALL =  0,
+  TEMP = 1,
+  HUMI=  2
+} LCDMode;
