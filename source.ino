@@ -28,14 +28,14 @@ void setup()
   pinMode(LED_GRE,OUTPUT);
 
   // Set hard coded min and max range.
-  sensors.sensMinTemp = TEMP_MIN;
-  sensors.sensMaxTemp = TEMP_MAX;
-  sensors.sensMinHumi = HUMI_MIN;
-  sensors.sensMaxHumi = HUMI_MAX;
+  sensors.sensMinTemp = TEMP_LOW;
+  sensors.sensMaxTemp = TEMP_HIG;
+  sensors.sensMinHumi = HUMI_LOW;
+  sensors.sensMaxHumi = HUMI_HUMI;
 
   // Set user defined alarm range.
-  sensors.maxTemp = 
-  sensors.maxHumi = 
+  sensors.maxTemp = TEMP_DEF;
+  sensors.maxHumi = HUMI_DEF;
 
   #ifdef DEBUG
   Serial.begin(9600);
@@ -158,7 +158,7 @@ void keyHumidityAdjust()
     BTN_ADJUST_HUMI, 
     sensors.sensMinHumi,
     sensors.sensMaxHumi,
-    sensors.maxHumi
+    sensors.userMaxHumi
   );
 }
 
@@ -169,6 +169,6 @@ void keyTempAdjust()
     BTN_ADJUST_TEMP, 
     sensors.sensMinTemp,
     sensors.sensMaxTemp,
-    sensors.maxTemp
+    sensors.userMaxTemp
   );
 }
