@@ -50,6 +50,8 @@ typedef struct {
   int maxTemp;
   int minHumi;
   int maxHumi;
+
+  bool smoke;
   int temp;
   int humi;
   int tol;

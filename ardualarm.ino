@@ -77,12 +77,11 @@ void loop()
 
   // Get Smoke status... Then do nothing with the value apart
   //  from output to LCD?!
-  int val;
-  val=analogRead(0);
+  sensors.smoke = analogRead(0);
 
   // BEGIN DEBUG:
   DEBUG_SEND("smo:");
-  DEBUG_SEND(val);
+  DEBUG_SEND(sensors.smoke);
   // EOF DEBUG.
 
   delay(100);
@@ -136,6 +135,7 @@ bool buttonCheck( int pin )
 ** LCD OUTPUT METHODS.
 */
 
+// Output all current values.
 void lcd_OutputAll()
 {
   lcd.begin(16,2);
@@ -151,9 +151,11 @@ void lcd_OutputAll()
   lcd.setCursor(5,1);
   lcd.print(sensors.humi);
   lcd.setCursor(13,0);
-  lcd.print(val,DEC);
-}sensors.
+  lcd.print( (sensors.smoke) ? 1 : 0 );
+}
 
+// Output *alarm temperature* only; not current temperature
+//  TODO: Output both.
 void lcd_OutputTemp()
 {
   lcd.begin(16,2);
@@ -162,6 +164,8 @@ void lcd_OutputTemp()
   lcd.print(maxTemp);
 }
 
+// Output *alarm humidity* only; not current humidity
+//  TODO: Output both.
 void lcd_OutputHumi()
 {
   lcd.begin(16,2);
